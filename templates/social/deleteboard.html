@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Board{% endblock %}
+{% block header %}Delete Board{% endblock %}
+
+{% from "common/_fields.html" import render_field %}
+{% block content %}
+
+
+<form action="{{ url_for('deleteboardbackend', id=id )}}">
+  <h2>Warning!</h2>
+  <p>Clicking 'Confirm Delete' will permanently remove this board from our system, including all ratings!</em></p>
+  <p>Are you sure you want to delete this board?</p>
+    <button type="submit" class="btn btn-danger btn-xs">Confirm Delete</button>
+</form>
+
+<form action="{{ url_for('userprofile' )}}">
+    <button type="submit" class="btn btn-default">Cancel</button>
+</form>
+
+{% endblock %}

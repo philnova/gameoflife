@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Save Your Board{% endblock %}
+
+{% from "common/_fields.html" import render_field %}
+{% block content %}
+
+<canvas id="canvas-thumbnail" width="200" height="120" style="border: 1px solid #000000;">Update your browser to support HTML5 Canvas</canvas> 
+        <script type="text/javascript">
+        $(document).ready(function()
+        {
+            canvas = $('#canvas-thumbnail').get(0);
+            ctx = canvas.getContext("2d");
+            console.log(canvas);
+            draw_thumbmnail(stringToGrid("{{seed}}","{{xdim}}","{{ydim}}"),canvas, ctx)
+            console.log('{{xdim}}',"{{seed}}")
+        });
+        </script>
+
+<form method='post' id="save-form" class="form-horizontal col-lg-5" action="{{ url_for('savebackend') }}">
+    {{ form.csrf_token }}
+    <div class="form-group">
+        {{render_field(form.nickname)}}
+        <p>Rules: {{rules}}</p>
+        {{render_field(form.shared)}}
+
+        
+        <button type="submit" class="btn btn-default">Save</button>
+    </div>
+</form>
+<script type="text/javascript">
+$('#save-form').submit(function(eventObj) {
+    $(this).append('<input type="hidden" name="xdim" value="{{xdim}}" /> ');
+    $(this).append('<input type="hidden" name="ydim" value="{{ydim}}" /> ');
+    $(this).append('<input type="hidden" name="seed" value="{{seed}}" /> ');
+    $(this).append('<input type="hidden" name="rules" value="{{rules}}" /> ');
+    return true;
+});
+</script>
+
+
+<p>
+<a href = "{{url_for('draw')}}">
+                        <button class="btn btn-default delete">
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Cancel </button>
+                    </a>
+</p>
+{% endblock %}

@@ -1,0 +1,165 @@
+<html>
+<head>
+    <title>{% block title %}{% endblock %}</title>
+    {% block head %}{% endblock %}
+    <script type="text/javascript" src="{{ url_for('static', filename='jquery.min.js') }}"></script>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon"
+              type="image/png"
+              href="{{ url_for('static', filename='favicon.ico')}}">
+</head>
+<body>
+
+    <script type="text/javascript">
+
+    function create_empty_array(x,y) {
+    cell_grid = new Array(y)
+    for (var i = 0; i<y; i++) {
+        cell_grid[i] = new Array(x).fill(0)
+    }
+    return cell_grid
+}
+
+Array.prototype.contains = function(obj) {
+    var i = this.length;
+    while (i--) {
+        if (this[i] === obj) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function downsample(grid, target_height, target_width) {
+    var new_grid = create_empty_array(target_width, target_height);
+    var rows_to_eliminate = grid.length - target_height;
+    var cols_to_eliminate = grid[0].length - target_width;
+    for (var i=Math.floor(rows_to_eliminate/2)+1; i<grid.length - Math.floor(rows_to_eliminate/2)-1; i++) {
+        for (var j=Math.floor(cols_to_eliminate/2)+1; j<grid[0].length - Math.floor(cols_to_eliminate/2)-1; j++) {
+            new_grid[i-Math.floor(rows_to_eliminate/2)+1][j-Math.floor(cols_to_eliminate/2)+1] = grid[i][j];
+        }
+    }
+    return new_grid
+}
+
+function draw_grid(grid, context, pixel_size) {
+    for (var i=0; i<grid.length; i++) {
+            for (var j=0; j<grid[i].length; j++) {
+                if (grid[i][j] == 1) {
+                    context.fillRect(j*pixel_size, i*pixel_size, pixel_size, pixel_size);
+                }
+            }
+}
+}
+
+function draw_thumbmnail(grid, canvas, context) {
+    //context.fillRect(0, 0, canvas.width, canvas.height);
+    console.log(canvas.height, grid.length);
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,canvas.width, canvas.height);
+    ctx.fillStyle="#000000"
+    var pixel_size = canvas.height / grid.length;
+    //maximum scaledown factor is 450/120, or 3.75. This is the height of the canvas on the draw page
+    //divided by the height of the thumbnail canvas on this page
+    console.log('pixel size:',pixel_size)
+    if (pixel_size < 1) {
+        console.log('This canvas is too large to be represented; need to downsample')
+        //we can have a grid of 120 high at most, 200 wide
+        downsampled_grid = downsample(grid, 120, 200);
+        draw_grid(downsampled_grid, context, 1);
+    }
+    else {
+        draw_grid(grid, context, pixel_size);
+        }
+    return
+  }
+
+    function stringToGrid(string, xdim, ydim) {
+        var grid = create_empty_array(xdim, ydim);
+        if (string.length == (xdim * ydim)) {
+            for (var i=0; i<ydim; i++) {
+                for (var j=0; j<xdim; j++) {
+                    //console.log(string.charAt(j+i*xdim));
+                    grid[i][j] = +string.charAt(j+i*xdim);
+                }
+            }
+            return grid
+        }
+        else {
+            return grid
+        }
+    }
+
+    </script>
+
+        <nav class="navbar navbar-default">
+            
+            <div class="container">
+
+                <div class="row divider green">
+
+        <div class="col-md-12"></div>
+
+    </div>
+        <div class="col-md-11 col-md-offset-1 padding-none">
+
+                <div class="navbar-header">
+
+                    <img src="{{ url_for('static', filename='ms-icon-70x70.png') }}" width="35px" height="35px">
+                    <a class="navbar-brand" href="{{ url_for('draw') }}">Conway</a>
+                </div>
+
+                <div>
+                    <ul class="nav navbar-nav">
+                            
+                        <li>
+                            <a href="{{ url_for('browse') }}">
+                                Browse
+                            </a>
+                        </li>
+                        
+                        {% if user_logged_in %}
+                        <li>
+                            <a href="{{ url_for('userprofile') }}">My Profile</a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('logout')}}">Logout
+                            </a>
+                        </li>
+                        {% else %}
+                        <li>
+                            <a href="{{ url_for('login')}}">Login
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        <li>
+                            <a href="{{ url_for('about') }}">About</a>
+                        </li>
+
+                    </ul>
+                    {% block image %} {% endblock %}
+                    
+                </div>
+            <!--</div>-->
+        </div>
+    </div>
+
+        </nav>
+        <div class = 'flash'>
+              {% with messages = get_flashed_messages() %}
+      {% if messages %}
+          
+        <ul>
+        {% for message in messages %}
+            <li> <strong> {{ message }} </strong> </li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+    {% endwith %}
+</div>
+
+{% block content %}{% endblock %}
+</body>
+</html>

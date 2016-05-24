@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile{% endblock %}
+{% block head %}
+{% endblock %}
+
+{% block content %}
+
+<script type="text/javascript">
+$(document).ready(function()
+{
+  $("tr:odd").css("background-color", "#cce6ff");
+  $("tr:even").css("background-color", "#ffffff")
+
+
+
+  /*for (var i=0; i<"{{board_ids}}".length; i++) {
+    var current_board_id = "{{board_ids}}".charAt(i)
+    console.log('current board: ',current_board_id);
+    //get canvas for this board
+    canvas = $('#canvas-'+current_board_id).get(0);
+    ctx = canvas.getContext("2d");
+    console.log(canvas);
+    grid = stringToGrid()
+    draw_thumbmnail(1,canvas,ctx)
+  }*/
+ var canvas;
+
+});
+</script>
+
+<h1>User Profile: {{user.name}}</h1>
+<div class="links"> <ul> <li><a href="{{ url_for('editprofile') }}">Change Username</a></li>
+    <li><a href=" {{ url_for('deleteuser') }}">Delete Account</a></li> </ul>
+{% if boards %}
+    <div class="board-list">
+    <table class="board-list">
+        <caption>My Boards</caption>
+        <colgroup>
+            <col width=15%>
+            <col width=5%>
+            <col width=5%>
+            <col width=10%>
+            <col width=10%>
+            <col width=25%>
+            <col width=5%>
+            <col width=25%>
+        </colgroup>
+        <thead>
+        <tr>
+            <th>Nickname</th> <th>X</th> <th>Y</th> <th>Rules</th> <th>Rating</th> <th>Preview</th> <th> Options </th><th> Privacy </th>
+        </tr>
+    </thead>
+    {% for board in boards %}
+    <td>{{board.nickname}} <a href="{{ url_for('renameboard', id=board.id) }}">rename</a></td>
+    <td>{{board.xdim}}</td>
+    <td>{{board.ydim}}</td>
+    <td>{{board.rules}}
+        <a href="#" onclick="$('#hiddenRules-{{board.id}}').show(); return false;">What's this?</a>
+        <div style="display: none;" id="hiddenRules-{{board.id}}"><p>Game of Life rules are denoted B#S#. The number(s) next to B show how many neighboring cells a dead cell requires to be born. The number(s) next to S show how many neighboring cells a live cell requires to survive.<a href="#" onclick="$('#hiddenRules-{{board.id}}').hide(); return false;">Hide</a></p></div>
+    </td>
+    <td> {{ratings[loop.index-1]}}% 
+        <div>{{thumbs_up[loop.index-1]}} <span class="glyphicon glyphicon-thumbs-up"> {{thumbs_down[loop.index-1]}} <span class="glyphicon glyphicon-thumbs-down"></td>
+        </div>
+    </td>
+    <td> 
+        <canvas id="canvas-{{board.id}}" width="200" height="120" style="border: 1px solid #000000;">Update your browser to support HTML5 Canvas</canvas> 
+        <script type="text/javascript">
+        $(document).ready(function()
+        {
+            console.log("{{board.nickname}}")
+            canvas = $('#canvas-'+"{{board.id}}").get(0);
+            ctx = canvas.getContext("2d");
+            //console.log(canvas);
+            draw_thumbmnail(stringToGrid("{{board.seed}}","{{board.xdim}}","{{board.ydim}}"),canvas, ctx)
+        });
+        </script>
+    </td>
+    <td> <ul> <li><a href="{{ url_for('load', id=board.id) }}">load</a></li> <li><a href="{{ url_for('deleteboard', id=board.id) }} ">delete</a></li> </ul> </td>
+    <td> {% if board.shared %}
+        <strong>Shared</strong>
+        <a href="#" onclick="$('#hiddenText-{{board.id}}').show(); return false;">What's this?</a>
+        <div style="display: none;" id="hiddenText-{{board.id}}"><p>Other Conway users can view your board in Browse, load it, rate it, share it on social media, and build their own creations on top of it. Links to your board can be viewed by anyone with or without a Conway account. But they cannot modify your original work. <a href="#" onclick="$('#hiddenText-{{board.id}}').hide(); return false;">Hide</a></p></div>
+        {% else %}
+        <strong>Private</strong>
+        <a href="#" onclick="$('#hiddenText-{{board.id}}').show(); return false;">What's this?</a>
+        <div style="display: none;" id="hiddenText-{{board.id}}"><p>Other Conway users cannot view your board in Browse, load it, or rate it. Links to this board are only viewable to you.<a href="#" onclick="$('#hiddenText-{{board.id}}').hide(); return false;">Hide</a></p></div>
+        {% endif %}
+
+        <p><a href="{{ url_for('setprivacy', id=board.id) }}">Change current privacy settings</a></p>
+    </td>
+    </tr>
+
+    {% endfor %}
+    </table>
+</div>
+
+{% else %}
+<em>You haven't saved any boards yet! Why not <a href="{{ url_for('draw') }}">make something?</a></em>
+
+{% endif %}
+
+<br />
+<div>
+<a href = "{{url_for('draw')}}">
+                        <button class="btn btn-default delete">
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Back </button>
+                    </a>
+</div>
+
+{% endblock %}

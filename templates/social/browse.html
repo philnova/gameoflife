@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Browse{% endblock %}
+{% block head %}
+{% endblock %}
+
+{% block content %}
+
+<script type="text/javascript">
+$(document).ready(function()
+{
+  $("tr:odd").css("background-color", "#cce6ff");
+  $("tr:even").css("background-color", "#ffffff")
+
+});
+</script>
+
+<h1>Browse Public Boards!</h1>
+
+{% if boards %}
+    <div class="board-list">
+    <table class="board-list">
+        <caption>My Boards</caption>
+        <colgroup>
+            <col width=15%>
+            <col width=15%>
+            <col width=5%>
+            <col width=5%>
+            <col width=10%>
+            <col width=10%>
+            <col width=25%>
+            <col width=5%>
+        </colgroup>
+        <thead>
+        <tr>
+            <th>Nickname</th> <th>Creator</th> <th>X</th> <th>Y</th> <th>Rules</th> <th>Rating</th> <th>Preview</th> <th> Options </th>
+        </tr>
+    </thead>
+    {% for board in boards %}
+    <td>{{board.nickname}}</td>
+    <td>{{users[loop.index-1]}}</td>
+    <td>{{board.xdim}}</td>
+    <td>{{board.ydim}}</td>
+    <td>{{board.rules}}
+        <a href="#" onclick="$('#hiddenRules-{{board.id}}').show(); return false;">What's this?</a>
+        <div style="display: none;" id="hiddenRules-{{board.id}}"><p>Game of Life rules are denoted B#S#. The number(s) next to B show how many neighboring cells a dead cell requires to be born. The number(s) next to S show how many neighboring cells a live cell requires to survive.<a href="#" onclick="$('#hiddenRules-{{board.id}}').hide(); return false;">Hide</a></p></div>
+    </td>
+    <td>{{ratings[loop.index-1]}}% 
+        <div>{{thumbs_up[loop.index-1]}} <span class="glyphicon glyphicon-thumbs-up"> {{thumbs_down[loop.index-1]}} <span class="glyphicon glyphicon-thumbs-down"></td>
+        </div>
+    <td> 
+        <canvas id="canvas-{{board.id}}" width="200" height="120" style="border: 1px solid #000000;">Update your browser to support HTML5 Canvas</canvas> 
+        <script type="text/javascript">
+        $(document).ready(function()
+        {
+            console.log("{{board.nickname}}")
+            canvas = $('#canvas-'+"{{board.id}}").get(0);
+            ctx = canvas.getContext("2d");
+            //console.log(canvas);
+            draw_thumbmnail(stringToGrid("{{board.seed}}","{{board.xdim}}","{{board.ydim}}"),canvas, ctx)
+        });
+        </script>
+    </td>
+    <td> <a href="{{ url_for('load', id=board.id) }}">load</a> </td>
+    
+    </tr>
+
+    {% endfor %}
+    </table>
+</div>
+
+{% else %}
+<em>There are no public boards yet! Why not <a href="{{ url_for('draw') }}">make something?</a></em>
+
+{% endif %}
+
+<br />
+<div>
+<a href = "{{url_for('draw')}}">
+                        <button class="btn btn-default delete">
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Back </button>
+                    </a>
+</div>
+
+{% endblock %}

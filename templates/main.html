@@ -1,0 +1,759 @@
+{% extends "base.html" %}
+
+{% block title %}Conway's Game of Life{% endblock %}
+{% block head %} {% if development %}<base href="http:127.0.0.1:5000" /> 
+{% else %}
+<base href="https:intense-depths-14831.herokuapp.com" /> 
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!--
+    todos:
+    - categorize preset shapes (i.e. gliders, methuselas, guns, etc.)
+    - complete social features
+        - display thumbnail of board during save
+    - replace algorithm with faster one
+    - allow plane transformations
+    - make more complete reset function
+    - allow rule changes
+    - allow click and drag
+    - create minify for link
+    - calculate pixel size for loaded boards
+    - put ratings on profile page
+    - REMEMBER TO CHANGE BASE URL ON THIS PAGE WHEN GOING LIVE
+-->
+
+
+
+<script type="text/javascript">
+function get_n_cell_x(cell_size, width) {
+    return Math.ceil(width / cell_size)
+}
+
+function gridToString(grid) {
+    var gridString = '';
+    //for a 2D grid, return a string
+    for (var i=0; i<grid.length; i++) {
+        gridString += grid[i].join("");
+    }
+    return gridString
+}
+
+function get_n_cell_y(cell_size, height) {
+    return Math.ceil(height / cell_size)
+}
+
+
+function mod(n, m) {
+        return ((n % m) + m) % m;
+} //javascript builtin % does not accept negative numbers
+
+/*function sum_neighborhood(grid, i, j) {
+    var neighborhood_sum = 0;
+    // check corners
+    if (i==0 && j==0) { //top left corner
+        neighborhood_sum = grid[i+1][j] + grid[i][j+1] + grid[i+1][j+1];
+    }
+    else if (i==0 && j==grid[0].length-1) { //top right corner
+        neighborhood_sum = grid[i+1][j] + grid[i][j-1] + grid[i+1][j-1];
+    }
+    else if (i==grid.length-1 && j==0) { //bottom left corner
+        neighborhood_sum = grid[i-1][j] + grid[i][j+1] + grid[i-1][j+1];
+    }
+    else if (i==grid.length-1 && j==grid[0].length-1) { //bottom right corner
+        neighborhood_sum = grid[i-1][j] + grid[i][j-1] + grid[i-1][j-1];
+    }
+    //check edges
+    else if (i == 0) { //top edge
+        neighborhood_sum = grid[i][j-1] + grid[i][j+1] + grid[i+1][j-1] + grid[i+1][j] + grid[i+1][j+1];
+    }
+    else if (j == 0) { //left edge
+        neighborhood_sum = grid[i-1][j] + grid[i+1][j] + grid[i-1][j+1] + grid[i][j+1] + grid[i+1][j+1];
+    }
+    else if (i == grid.length-1) { //bottom edge
+        neighborhood_sum = grid[i][j-1] + grid[i][j+1] + grid[i-1][j-1] + grid[i-1][j] + grid[i-1][j+1];
+    }
+    else if (j == grid[0].length-1) { //right edge
+        neighborhood_sum = grid[i-1][j] + grid[i+1][j] + grid[i-1][j-1] + grid[i][j-1] + grid[i+1][j-1];
+    }
+    else { //general case
+        neighborhood_sum = grid[i-1][j-1] + grid[i-1][j] + grid[i-1][j+1] + grid[i][j-1] + grid[i][j+1] + grid[i+1][j-1] + grid[i+1][j] + grid[i+1][j+1];
+    }
+    return neighborhood_sum;
+}*/
+
+function sum_neighborhood(grid, i, j) {
+    var neighborhood_sum = 0;
+    xl = grid[0].length;
+    yl = grid.length;
+    neighborhood_sum = grid[mod(i-1,yl)][mod(j-1,xl)] + grid[mod(i-1,yl)][mod(j,xl)] + grid[mod(i-1,yl)][mod(j+1,xl)] + grid[mod(i,xl)][mod(j-1,xl)] + grid[mod(i,yl)][mod(j+1,xl)] + grid[mod(i+1,yl)][mod(j-1,xl)] + grid[mod(i+1,yl)][mod(j,xl)] + grid[mod(i+1,yl)][mod(j+1,xl)];
+    return neighborhood_sum;
+
+}
+
+function apply_conway_rules(grid) {
+    new_grid = create_empty_array(grid[0].length, grid.length);
+    for (var i = 0; i<grid.length; i++) {
+        for (var j = 0; j<grid[0].length; j++) {
+            var neighborhood_sum = sum_neighborhood(grid, i, j);
+            if (grid[i][j] == 1) { //cell is alive
+                if (neighborhood_sum > 1 && neighborhood_sum < 4) {
+                    new_grid[i][j] = 1;
+                }
+            }
+            else { //cell is dead
+                if (neighborhood_sum == 3) {
+                    new_grid[i][j] = 1;
+                }
+            }
+        }
+    }
+    return new_grid
+}
+
+function apply_conway_rules_arbitrary(grid, birth_conditions, survival_conditions) {
+    new_grid = create_empty_array(grid[0].length, grid.length);
+    for (var i = 0; i<grid.length; i++) {
+        for (var j = 0; j<grid[0].length; j++) {
+            var neighborhood_sum = sum_neighborhood(grid, i, j);
+            if (grid[i][j] == 1) { //cell is alive
+                //check if an item is a member of an array
+                if (survival_conditions.contains(neighborhood_sum)) {
+                    new_grid[i][j] = 1;
+                }
+            }
+            else { //cell is dead
+                if (birth_conditions.contains(neighborhood_sum)) {
+                    new_grid[i][j] = 1;
+                }
+            }
+        }
+    }
+    return new_grid
+}
+
+
+function create_empty_array(x,y) {
+    cell_grid = new Array(y)
+    for (var i = 0; i<y; i++) {
+        cell_grid[i] = new Array(x).fill(0)
+    }
+    return cell_grid
+}
+
+function create_random_array(x,y,p_cutoff) {
+    cell_grid = create_empty_array(x,y);
+    for (var i=0; i<y; i++) {
+        for (var j=0; j<x; j++) {
+            if (Math.random() > p_cutoff) {
+                cell_grid[i][j] = 1;
+            }
+        }
+    }
+    return cell_grid
+}
+
+function draw_glidergun(grid) {
+    var center_x = Math.floor(grid[0].length / 2);
+    var center_y = Math.floor(grid.length / 2);
+    console.log(center_x, center_y, grid[0].length, grid.length);
+
+    grid[center_y][center_x] = 1;
+    grid[center_y+2][center_x+1] = 1;
+    grid[center_y-2][center_x+1] = 1;
+    grid[center_y-1][center_x+2] = 1;
+    grid[center_y][center_x+2] = 1;
+    grid[center_y+1][center_x+2] = 1;
+    grid[center_y][center_x+3] = 1;
+
+    grid[center_y-1][center_x+6] = 1;
+    grid[center_y-1][center_x+7] = 1;
+    grid[center_y-2][center_x+6] = 1;
+    grid[center_y-2][center_x+7] = 1;
+    grid[center_y-3][center_x+6] = 1;
+    grid[center_y-3][center_x+7] = 1;
+    grid[center_y-4][center_x+8] = 1;
+    grid[center_y][center_x+8] = 1;
+
+    grid[center_y-4][center_x+10] = 1;
+    grid[center_y][center_x+10] = 1;
+    grid[center_y-5][center_x+10] = 1;
+    grid[center_y+1][center_x+10] = 1;
+
+    grid[center_y-2][center_x+20] = 1;
+    grid[center_y-2][center_x+21] = 1;
+    grid[center_y-3][center_x+20] = 1;
+    grid[center_y-3][center_x+21] = 1;
+
+    grid[center_y-3][center_x-1] = 1;
+    grid[center_y+3][center_x-1] = 1;
+    grid[center_y-3][center_x-2] = 1;
+    grid[center_y+3][center_x-2] = 1;
+    grid[center_y-2][center_x-3] = 1;
+    grid[center_y+2][center_x-3] = 1;
+    grid[center_y-1][center_x-4] = 1;
+    grid[center_y][center_x-4] = 1;
+    grid[center_y+1][center_x-4] = 1;
+
+    grid[center_y][center_x-13] = 1;
+    grid[center_y][center_x-14] = 1;
+    grid[center_y-1][center_x-13] = 1;
+    grid[center_y-1][center_x-14] = 1;
+}
+
+function draw_blossom(grid) {
+    var center_x = Math.floor(grid[0].length / 2);
+    var center_y = Math.floor(grid.length / 2);
+
+    grid[center_y][center_x] = 1;
+    grid[center_y][center_x-1] = 1;
+    grid[center_y][center_x+1] = 1;
+    grid[center_y+1][center_x] = 1;
+    grid[center_y+5][center_x] = 1;
+    grid[center_y+6][center_x] = 1;
+    grid[center_y+6][center_x-1] = 1;
+    grid[center_y+6][center_x+1] = 1;
+}
+
+function draw_rpentomino(grid) {
+    var center_x = Math.floor(grid[0].length / 2);
+    var center_y = Math.floor(grid.length / 2);
+    grid[center_y][center_x] = 1;
+    grid[center_y][center_x-1] = 1;
+    grid[center_y+1][center_x] = 1;
+    grid[center_y-1][center_x] = 1;
+    grid[center_y-1][center_x+1] = 1;
+}
+
+function draw_acorn(grid) {
+    var center_x = Math.floor(grid[0].length / 2);
+    var center_y = Math.floor(grid.length / 2);
+
+    grid[center_y][center_x] = 1;
+    grid[center_y][center_x+1] = 1;
+    grid[center_y-2][center_x+1] = 1;
+    grid[center_y-1][center_x+3] = 1;
+    grid[center_y][center_x+4] = 1;
+    grid[center_y][center_x+5] = 1;
+    grid[center_y][center_x+6] = 1;
+}
+
+function draw_glider(grid) {
+    var center_x = Math.floor(grid[0].length / 2);
+    var center_y = Math.floor(grid.length / 2);
+    grid[center_y][center_x] = 1;
+    grid[center_y+1][center_x+1] = 1;
+    grid[center_y+2][center_x+1] = 1;
+    grid[center_y+2][center_x] = 1;
+    grid[center_y+2][center_x-1] = 1;
+}
+
+function copy_grid(old_grid, new_x, new_y) {
+    var smaller_x = Math.min(old_grid[0].length, new_x);
+    var smaller_y = Math.min(old_grid.length, new_y);
+    var new_grid = create_empty_array(new_x, new_y);
+    for (var i = 0; i<smaller_y; i++) {
+        for (var j=0; j<smaller_x; j++) {
+            new_grid[i][j] = old_grid[i][j];
+        }
+    }
+    return new_grid
+}
+
+function draw_grid_on_canvas(context, canvas, grid, cell_size) {
+    //erase canvas
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    for (var i=0; i<grid.length; i++) {
+        for (var j=0; j<grid[i].length; j++) {
+            if (grid[i][j] == 1) {
+                context.fillRect(j*cell_size, i*cell_size, cell_size, cell_size);
+            }
+        }
+    }
+}
+
+
+$(document).ready(function() {
+    generation = 0;
+    generation_time = 1000; //in ms
+    canvas = $('#game-canvas').get(0);
+    ctx = canvas.getContext("2d");
+
+    function getMousePos(canvas, evt) {
+        var rect = canvas.getBoundingClientRect();
+        return {
+          x: evt.clientX - rect.left,
+          y: evt.clientY - rect.top
+        };
+      }
+      // canvas.addEventListener('mousemove', function(evt) {
+      //   var mousePos = getMousePos(canvas, evt);
+      //   var message = 'Mouse position: ' + mousePos.x + ',' + mousePos.y;
+      //   console.log(message);
+      // }, false);
+
+      canvas.addEventListener('click', function(evt) {
+      var mousePos = getMousePos(canvas, evt);
+      var message = 'Mouse position: ' + mousePos.x + ',' + mousePos.y;
+      cellToggle(mousePos.x, mousePos.y);
+    }, false);
+
+    function find_cell_to_toggle(x, y) {
+        var cell_x = Math.floor(x/Simulation.cell_size);
+        var cell_y = Math.floor(y/Simulation.cell_size);
+        return [cell_x, cell_y]
+    }
+
+    function cellToggle(x,y) {
+        var cell_x = find_cell_to_toggle(x,y)[0]
+        var cell_y = find_cell_to_toggle(x,y)[1]
+        Simulation.cell_grid[cell_y][cell_x] = (Simulation.cell_grid[cell_y][cell_x] == 0 ? 1 : 0);
+        draw_grid_on_canvas(ctx, canvas, Simulation.cell_grid, Simulation.cell_size);
+        Simulation.current_seed = Simulation.cell_grid.slice(0); //every time we make a change, update the seed
+    }
+
+function get_pixel_size(n_cell_y, canvas_height) {
+    return Math.ceil(canvas_height / n_cell_y)
+}
+
+
+delta = 0;
+fps = 2;
+maxFPS = 50;
+started = false;
+timestep = 1000 / 60;
+
+function panic() {
+    delta = 0;
+}
+
+    Simulation = {};
+    Simulation.paused = true;
+    Simulation.cell_size = 5;
+
+    Simulation.initialize = function() {
+    this.current_seed = []; //will store grids for save function
+    canvasSizeWidth = ctx.canvas.clientWidth;
+    canvasSizeHeight = ctx.canvas.clientHeight;
+    
+    
+    
+    if ('{{loaded_board}}') {
+        console.log('load');
+        this.cell_grid = stringToGrid('{{loaded_board.seed}}','{{loaded_board.xdim}}','{{loaded_board.ydim}}');
+        this.n_cell_x = '{{loaded_board.xdim}}';
+        this.n_cell_y = '{{loaded_board.ydim}}';
+        this.current_seed = this.cell_grid.slice(0);
+        var pixel_size = get_pixel_size(this.n_cell_y, canvasSizeHeight);
+        showValue(pixel_size)
+
+        var rule_string = '{{loaded_board.rules}}'
+        var birthArray = rule_string.split('S')[0].split('B')[1].split('');
+        var survivalArray = rule_string.split('S')[1].split('');
+        //convert birthArray and survivalArray from arrays of stirngs into arrays of ints
+
+        $('#birthInput').val(birthArray.join(''))
+        $('#survivalInput').val(survivalArray.join(''))
+
+        for(var i=birthArray.length; i--;) birthArray[i] = birthArray[i]|0;
+        for(var i=survivalArray.length; i--;) survivalArray[i] = survivalArray[i]|0;
+        //console.log(birthArray, survivalArray);
+        this.birth_conditions = birthArray;
+        this.survival_conditions = survivalArray;
+
+    }
+    else {
+        this.n_cell_x = get_n_cell_x(this.cell_size, canvasSizeWidth);
+        this.n_cell_y = get_n_cell_y(this.cell_size, canvasSizeHeight);
+        this.cell_grid = create_empty_array(this.n_cell_x, this.n_cell_y);
+        this.birth_conditions = [3,];
+        this.survival_conditions = [2,3];
+    }
+    draw_grid_on_canvas(ctx, canvas, this.cell_grid, this.cell_size);
+
+    this.generation = 0;
+    $('#generation').text(this.generation);
+    };
+
+
+    Simulation.initialize();
+    start();
+    stop();
+
+
+
+    Simulation.advanceOne = function() {
+        this.generation++;
+        $('#generation').text(this.generation);
+        //console.log(this.generation, 'current generation');
+        //console.log(this.cell_grid);
+        this.cell_grid = apply_conway_rules_arbitrary(this.cell_grid, this.birth_conditions, this.survival_conditions);
+        //console.log(this.cell_grid);
+        draw_grid_on_canvas(ctx, canvas, this.cell_grid, this.cell_size);
+    }
+
+    document.getElementById("button-run").onclick = function () { Simulation.paused = false;
+    start(); };
+
+    document.getElementById("button-speed").onclick = function () { 
+    if (maxFPS == 2) {
+        maxFPS = 50;
+    } else maxFPS = 2; };
+
+    if ('{{loaded_board}}') {
+    document.getElementById("button-shareable-link").onclick = function() { 
+        window.prompt("Copy to clipboard: Ctrl+C, Enter", window.location.href );
+         }
+
+    document.getElementById("button-like").onclick = function() {
+        window.location.href = window.location.origin+'/like/'+'{{loaded_board.id}}'
+    };
+
+    document.getElementById("button-dislike").onclick = function() {
+        window.location.href = window.location.origin+'/dislike/'+'{{loaded_board.id}}'
+    };
+    }
+
+    document.getElementById("button-pause").onclick = function () { stop(); };
+
+    document.getElementById("button-reset").onclick = function() { 
+        Simulation.initialize();
+        stop(); 
+         }
+
+
+        document.getElementById("button-blossom").onclick = function() {
+        draw_blossom(Simulation.cell_grid);
+        draw_grid_on_canvas(ctx, canvas, Simulation.cell_grid, Simulation.cell_size);
+        Simulation.current_seed = Simulation.cell_grid.slice(0); //every time we make a change, update the seed
+
+         }
+
+         document.getElementById("button-acorn").onclick = function() {
+        draw_acorn(Simulation.cell_grid);
+        draw_grid_on_canvas(ctx, canvas, Simulation.cell_grid, Simulation.cell_size);
+        Simulation.current_seed = Simulation.cell_grid.slice(0); //every time we make a change, update the seed
+
+         }
+
+         document.getElementById("button-rpenomino").onclick = function() {
+        draw_rpentomino(Simulation.cell_grid);
+        draw_grid_on_canvas(ctx, canvas, Simulation.cell_grid, Simulation.cell_size);
+        Simulation.current_seed = Simulation.cell_grid.slice(0); //every time we make a change, update the seed
+
+         }
+
+
+    document.getElementById("button-glider").onclick = function() {
+        draw_glider(Simulation.cell_grid);
+        draw_grid_on_canvas(ctx, canvas, Simulation.cell_grid, Simulation.cell_size);
+        Simulation.current_seed = Simulation.cell_grid.slice(0); //every time we make a change, update the seed
+    }
+
+    document.getElementById("button-glidergun").onclick = function() {
+        draw_glidergun(Simulation.cell_grid);
+        draw_grid_on_canvas(ctx, canvas, Simulation.cell_grid, Simulation.cell_size);
+        Simulation.current_seed = Simulation.cell_grid.slice(0); //every time we make a change, update the seed
+    }
+
+    document.getElementById("button-stepforward").onclick = function() { 
+        stop();
+        Simulation.advanceOne();
+    }
+
+    document.getElementById("button-random").onclick = function() { 
+        start();
+        //Simulation.initialize();
+        stop();
+        Simulation.cell_grid = create_random_array(Simulation.n_cell_x, Simulation.n_cell_y, 0.75);
+        draw_grid_on_canvas(ctx, canvas, Simulation.cell_grid, Simulation.cell_size);
+        Simulation.current_seed = Simulation.cell_grid.slice(0); //every time we make a change, update the seed
+
+    }
+
+    document.getElementById("button-save").onclick = function() {
+        //console.log('../saveAjax/grid/'+gridToString(current_seed));
+        /*if (!'{{loaded_board}}'){
+        console.log('save from scratch')
+        window.location.href = '../save/'+gridToString(Simulation.current_seed)+'/'+Simulation.current_seed.length+'/'+Simulation.current_seed[0].length;
+        }
+        else {
+            console.log('save from load')
+            window.location.href = 'save/'+gridToString(Simulation.current_seed)+'/'+Simulation.current_seed.length+'/'+Simulation.current_seed[0].length;
+        };
+*/
+
+        function post(path, params, method) {
+    method = method || "post"; // Set method to post by default if not specified.
+
+    // The rest of this code assumes you are not using a library.
+    // It can be made less wordy if you use one.
+    var form = document.createElement("form");
+    form.setAttribute("method", method);
+    form.setAttribute("action", path);
+
+    for(var key in params) {
+        if(params.hasOwnProperty(key)) {
+            var hiddenField = document.createElement("input");
+            hiddenField.setAttribute("type", "hidden");
+            hiddenField.setAttribute("name", key);
+            hiddenField.setAttribute("value", params[key]);
+
+            form.appendChild(hiddenField);
+         }
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+    if (!'{{loaded_board}}'){
+    post('save/', {grid: gridToString(Simulation.current_seed), y: Simulation.current_seed.length, x: Simulation.current_seed[0].length, birth: Simulation.birth_conditions.join(''), survival: Simulation.survival_conditions.join('')})
+    }
+    else {
+        post(window.location.origin+'/save/', {grid: gridToString(Simulation.current_seed), y: Simulation.current_seed.length, x: Simulation.current_seed[0].length, birth: Simulation.birth_conditions.join(''), survival: Simulation.survival_conditions.join('')})
+
+    }
+
+}
+
+
+
+    //Simulation.pause = function() {
+    //    this.paused = (this.paused) ? false : true;
+    //}
+    function stop() {
+    running = false;
+    started = false;
+    cancelAnimationFrame(frameID);
+}
+
+function start() {
+    if (!started) {
+        started = true;
+        frameID = requestAnimationFrame(function(timestamp) {
+            Simulation.advanceOne();
+            running = true;
+            lastFrameTimeMs = timestamp;
+            lastFpsUpdate = timestamp;
+            framesThisSecond = 0;
+            frameID = requestAnimationFrame(mainLoop);
+        });
+    }
+}
+
+function begin() {
+}
+
+function mainLoop(timestamp) {
+    // Throttle the frame rate.    
+    if (timestamp < lastFrameTimeMs + (1000 / maxFPS)) {
+        frameID = requestAnimationFrame(mainLoop);
+        return;
+    }
+    delta += timestamp - lastFrameTimeMs;
+    lastFrameTimeMs = timestamp;
+
+    begin(timestamp, delta);
+
+    if (timestamp > lastFpsUpdate + 1000) {
+        fps = 0.25 * framesThisSecond + 0.75 * fps;
+
+        lastFpsUpdate = timestamp;
+        framesThisSecond = 0;
+    }
+    framesThisSecond++;
+
+    var numUpdateSteps = 0;
+    while (delta >= timestep) {
+        //update(timestep);
+        delta -= timestep;
+        if (++numUpdateSteps >= 240) {
+            panic();
+            break;
+        }
+    }
+
+    Simulation.advanceOne();
+
+    frameID = requestAnimationFrame(mainLoop);
+}
+
+});
+</script>
+
+<div class="canvas-elem">
+<canvas id="game-canvas" width="750" height="450" style="border: 5px solid #000000;">Update your browser to support HTML5 Canvas</canvas>
+</div>
+
+<nav class="button-bar simulation-control-bar">
+
+    <button type="button" id="button-run" class="btn btn-info">
+        <span class="glyphicon glyphicon-play"><span> Run
+    </button>
+
+    <button type="button" id="button-pause" class="btn btn-info">
+        <span class="glyphicon glyphicon-pause"><span> Pause
+    </button>
+
+    <button type="button" id="button-stepforward" class="btn btn-info">
+        <span class="glyphicon glyphicon-step-forward"><span> Step 
+    </button>
+
+    <button type="button" id="button-reset" class="btn btn-info">
+        <span class="glyphicon glyphicon-refresh"><span> Reset
+    </button>
+
+    <button type="button" id="button-speed" class="btn btn-info">
+        <span class="glyphicon glyphicon-flash"><span> Toggle Speed
+    </button>
+
+
+
+</nav>
+
+
+<nav class="button-bar pixel-bar">
+
+<input type="range" min="1" max="50" value="5" step="1" onchange="showValue(this.value)" />
+Cell size: <span id="range">5</span> px
+<script type="text/javascript">
+function showValue(newValue)
+{
+    document.getElementById("range").innerHTML=newValue;
+    Simulation.cell_size=newValue;
+    Simulation.n_cell_x = get_n_cell_x(Simulation.cell_size, canvasSizeWidth);
+    Simulation.n_cell_y = get_n_cell_y(Simulation.cell_size, canvasSizeHeight);
+    //console.log('copying grid');
+    Simulation.cell_grid = copy_grid(Simulation.cell_grid, Simulation.n_cell_x, Simulation.n_cell_y);
+    //console.log(cell_grid);
+    draw_grid_on_canvas(ctx, canvas, Simulation.cell_grid, Simulation.cell_size);
+}
+</script>
+
+ <form>
+        <span>Rules: B<input type='text' min="0" size='3' id='birthInput' value='3' /></span>
+        <span>S<input type='text' min="0" size='3' id='survivalInput' value='23' /></span>
+    <button type="button" id="button-ruleschange" class="btn btn-info">
+        <span class="glyphicon glyphicon-ok"></span>
+    </button>
+</form>
+
+<script>
+document.getElementById("button-ruleschange").onclick = function() {
+    stop();
+    console.log('rules change invoked');
+    birthString = $('#birthInput').val()
+    survivalString = $('#survivalInput').val()
+    
+    console.log(birthString, survivalString);
+    if (checkRules(birthString)) {
+        var birthConditions = parseRules(birthString);
+        Simulation.birth_conditions = birthConditions;
+    }
+
+    if (checkRules(survivalString)) {
+        var survivalConditions = parseRules(survivalString);
+        Simulation.survival_conditions = survivalConditions;
+    }
+    console.log(Simulation.birth_conditions, Simulation.survival_conditions);
+};
+
+function parseRules(ruleString) {
+    ruleArray = new Array(ruleString.length)
+    for (var i=0; i<ruleString.length; i++) {
+        ruleArray[i] = +ruleString.charAt(i)
+    }
+    // need to remove duplicates
+    return ruleArray
+};
+
+//check validity of input
+function checkRules(ruleString) {
+    for (var i=0; i<ruleString.length; i++) {
+        if (+ruleString.charAt(i) > 8 || +ruleString.charAt(i) < 0) { //contains error?
+            return false
+        }
+    }
+    return true
+};
+
+</script>
+
+</nav>
+
+<nav class="button-bar generation-bar">
+Current generation: <span id="generation">0</span>
+</nav>
+
+<nav class="button-bar extras-bar">
+
+    <button type="button" id="button-blossom" class="btn btn-success">
+        <span class="glyphicon glyphicon-flash"><span> Blossom
+    </button>
+
+    <button type="button" id="button-glider" class="btn btn-success">
+        <span class="glyphicon glyphicon-flash"><span> Glider
+    </button>
+
+    <button type="button" id="button-glidergun" class="btn btn-success">
+        <span class="glyphicon glyphicon-flash"><span> Glider Gun
+    </button>
+
+    <button type="button" id="button-acorn" class="btn btn-success">
+        <span class="glyphicon glyphicon-flash"><span> Acorn
+    </button>
+
+    <button type="button" id="button-rpenomino" class="btn btn-success">
+        <span class="glyphicon glyphicon-flash"><span> R-Pentomino
+    </button>
+
+    <button type="button" id="button-random" class="btn btn-success">
+        <span class="glyphicon glyphicon-flash"><span> Random
+    </button>
+
+</nav>
+
+
+<nav class="button-bar social-bar">
+
+    {% if user_logged_in %}
+
+    <button type="button" id="button-save" class="btn btn-warning">
+        <span class="glyphicon glyphicon-download-alt"><span> Save
+    </button>
+
+
+    {% if loaded_board %}
+    <button type="button" id="button-like" class="btn btn-warning">
+        <span class="glyphicon glyphicon-thumbs-up"><span> Like
+    </button>
+
+    <button type="button" id="button-dislike" class="btn btn-warning">
+        <span class="glyphicon glyphicon-thumbs-down"><span> Dislike
+    </button>
+
+        {% if loaded_board.shared %}
+        <button type="button" id="button-shareable-link" class="btn btn-warning">
+            <span class="glyphicon glyphicon-cloud-upload"></span> Shareable Link
+        </button>
+        {% else %}
+        <button type="button" id="button-noshare" class="btn btn-default">
+            Private board - cannot link
+        </button>
+
+        {% endif %}
+    {% else %}
+
+    {% endif %}
+
+    {% else %}
+    <div class="login-message">Log in or create an account to save your game</div>
+    {% endif %}
+
+
+</nav>
+
+{% endblock %}

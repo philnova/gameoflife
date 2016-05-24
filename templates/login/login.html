@@ -1,0 +1,71 @@
+
+{% extends "base.html" %}
+{% block title %}Conway Login{% endblock %}
+{% block head %}{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+<script src="https://apis.google.com/js/client:platform.js?onload=start" async defer></script> <!--creates anonymous function that inserts script into DOM-->
+</head>
+
+<body>
+	<nav class="navbar navbar-default">
+            <div class="container">
+                <div class="row divider green">
+        <div class="col-md-12"> 
+        	</div> </div> 
+        	<h1>Login</h1> 
+    	
+		
+		<p>Use your Google+ Account to Access Conway's Social Features</p>
+		<div id="signinButton">
+			<!--openid is a type of permission that gives us access to username and email-->
+			<!--data-approvalprompt="force" forces the user to login every time. Useful for dev but annoying in production-->
+			<span class="g-signin"
+				data-scope="openid"
+				data-clientid="480377061451-fo3mbsrlsgjb0qab1lbf3hincnfkhca6.apps.googleusercontent.com"
+				data-redirecturi="postmessage"
+				data-accesstype="offline"
+				data-cookiepolicy="single_host_origin"
+				data-callback="signInCallback"
+				data-approvalprompt="force">
+			</span>
+		</div>
+		
+
+		<script>
+		function signInCallback(authResult){
+			if (authResult['code']) {
+				// Hide the sign-in button now that the user has signed in
+				$('#signinButton').attr('style', 'display: none');
+				// Send the one-time-use code to the server. If the server
+				// responds, write a 'login' successful message and redirect to the main page
+				$.ajax({
+					type: 'POST',
+					url: '/loginbackend?state={{STATE}}',
+					processData: false, 
+					contentType: 'application/octet-stream; charset=utf-8',
+					data: authResult['code'],
+					success: function(result) {
+						if (result) {
+							$('#result').html('<h2>Login Successful!</h2></br>' + result + '</br>Redirecting...')
+						setTimeout(function() {
+							window.location.href = "/";
+						}, 4000);
+						} else if (authResult['error']) {
+							console.log('There was an error: '+authResult['error']);
+						} else {
+							$('#result').html('Failed to make server-side call.');
+						}
+					}
+				});
+			}
+		}
+		</script>
+<div id="result"></div>
+</div></nav>
+
+{% endblock %}

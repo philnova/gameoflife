@@ -1,0 +1,6 @@
+.env
+*.pyc
+venv
+db_instructions.txt
+client_secrets.json
+

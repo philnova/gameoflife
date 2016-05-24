@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}About{% endblock %}
+{% block head %}
+{% endblock %}
+
+{% block content %}
+
+<h1>About John Conway's Game of Life</h1>
+<h2>Rules</h2>
+<p>The Game of Life is a zero-player game: the 'player' can only set the initial conditions, then let the rules take over.</p>
+<p>From <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Wikipedia:</a> </p>
+<blockquote cite="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">"The universe of the Game of Life is an infinite two-dimensional orthogonal grid of square cells, each of which is in one of two possible states, alive or dead. Every cell interacts with its eight neighbours, which are the cells that are horizontally, vertically, or diagonally adjacent. At each step in time, the following transitions occur:
+
+<ol>
+<li>Any live cell with fewer than two live neighbours dies, as if caused by under-population.</li>
+<li>Any live cell with two or three live neighbours lives on to the next generation.</li>
+<li>Any live cell with more than three live neighbours dies, as if by over-population.</li>
+<li>Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.</li>
+</ol>
+
+The initial pattern constitutes the seed of the system. The first generation is created by applying the above rules simultaneously to every cell in the seed—births and deaths occur simultaneously, and the discrete moment at which this happens is sometimes called a tick (in other words, each generation is a pure function of the preceding one). The rules continue to be applied repeatedly to create further generations."
+</blockquote>
+
+<p>There are many possible variations on the Game of Life. Most commonly, the rules for birth or survival can be adjusted. These rules are typically abbreviated as BxSy, where x is a list of numbers of adjacent cells that lead to birth and y is a list of numbers of adjacent cells that lead to survival. The original Game of Life is then B3S23 (the survival conditions are 2 and 3, not 23!).</p>
+
+<h2>History</h2>
+
+<p>The Game of Life was invented by the British mathematician John Conway, and popularized by <em>Scientific American</em> columnist and puzzle enthusiast Martin Gardner. The game is a powerful demonstation of how simple rules, applied deterministically, can lead to complex and unpredictable behavior.</p>
+
+<p>Early players discovered simple 'blinkers' and 'oscillators' (patterns that repeat after a few generations) and 'methuselahs' (patterns with fewer than 10 initial cells that do not stabilize for hundreds or thousands of generations). R-pentomino and acorn are provided on this site as example methuselahs, each persisting for over 1000 generations before stabilizing.</p>
+
+<p>Conway originally believed that no finite pattern was capable of expanding forever, but was proven wrong by Bill Gosper. Gosper's 'glider gun' (provided on this site as a default) emits crawling patterns called gliders every 30 generations until infinity, beginning on the 15th generation. (In my implementation, since the grid wraps around and is not infinite, it will eventually distroy itself). Glider guns eventually provided the basis for the first <a href="http://www.conwaylife.com/wiki/Turing_machine">Turing machine</a> built in the Game of Life, proving by demonstration that the Game of Life is <a href="https://en.wikipedia.org/wiki/Turing_completeness">Turing-complete.</a>
+
+<h2>About Conway</h2>
+
+<p>Conway is an <a href="https://github.com/philnova">open-source</a> implementation of John Conway's Game of Life.</p>
+<p>It was built by <a href="http://philnova.io">Phil Nova</a> in 2016. It uses the flask web framework for Python; JavaScript, bootstrap and jQuery; and SQLAlchemy.</p>
+<p>My first exposure to the Game of Life came through a college course, Robert Sapolsky's <a href="https://www.youtube.com/playlist?list=PL848F2368C90DDC3D">Human Behavioral Biology</a>. I started playing the game on graph paper; I resolved that when I learned to program, I'd find a better way. So here we are.</p>
+
+<div>
+<a href = "{{url_for('draw')}}">
+                        <button class="btn btn-default delete">
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Back </button>
+                    </a>
+</div>
+
+{% endblock %}

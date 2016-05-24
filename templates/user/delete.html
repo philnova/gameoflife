@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Delete User Account{% endblock %}
+{% block header %}Delete User Account{% endblock %}
+
+{% from "common/_fields.html" import render_field %}
+{% block content %}
+
+<div>
+<form action="{{ url_for('deleteuserbackend' )}}">
+  <h2>Warning!</h2>
+  <p>Clicking 'Delete Account' will permanently remove your user profile from our system, <em>
+    including all saved boards.</em></p>
+  <p>Are you sure you want to delete your account?</p>
+    <button type="submit" class="btn btn-danger btn-xs">Delete Account</button>
+</form>
+</div>
+
+<div>
+<form action="{{ url_for('userprofile' )}}">
+    <button type="submit" class="btn btn-default">No, I want to keep my account</button>
+</form>
+</div>
+
+{% endblock %}
